@@ -1,5 +1,6 @@
+import {SUPABASE_URL, SUPABASE_ANON_KEY} from "./config";
 import {createClient} from "https://esm.sh/@supabase/supabase-js@2";import "./styles/main.css";
-const URL="";const KEY="";const db=URL&&KEY?createClient(URL,KEY):null;const root=document.body;
+const URL=SUPABASE_URL;const KEY=SUPABASE_ANON_KEY;const db=URL&&KEY?createClient(URL,KEY):null;const root=document.body;
 const fields=["brand","tagline","description","address","phone","email","whatsapp","instagram","facebook","hero_title","hero_text","logo_url","hero_media_url"];
 if(!db){root.innerHTML='<main class="copy"><h1>Admin panel</h1><p>Add SUPABASE_URL and SUPABASE_ANON_KEY in src/admin.ts, run supabase/schema.sql, then sign in.</p><a href="index.html">← Website</a></main>'}else{login()}
 function login(){root.innerHTML='<main class="copy"><h1>Website Admin</h1><form id="login" class="contact"><input name="email" type="email" required placeholder="Admin email"><input name="password" type="password" required placeholder="Password"><button class="cta">SIGN IN</button></form></main>';document.querySelector("#login")!.addEventListener("submit",async e=>{e.preventDefault();const d=Object.fromEntries(new FormData(e.currentTarget as HTMLFormElement).entries());const r=await db!.auth.signInWithPassword({email:String(d.email),password:String(d.password)});if(r.error)return alert(r.error.message);dashboard()})}
