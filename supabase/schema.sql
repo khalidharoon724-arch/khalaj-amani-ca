@@ -1,0 +1,15 @@
+create extension if not exists pgcrypto;
+create table if not exists public.admins(user_id uuid primary key references auth.users(id) on delete cascade,email text,created_at timestamptz default now());
+create table if not exists public.site_settings(key text primary key,value text not null default '');
+create table if not exists public.pages(slug text primary key,title text,content jsonb default '{}'::jsonb,meta_title text default '',meta_description text default '');
+create table if not exists public.products(id text primary key,name text,size text,quality text,materials text,description text,washing text,collection text,price text default 'ENQUIRE',images jsonb default '[]',published boolean default true,sort_order int default 0);
+create table if not exists public.enquiries(id uuid primary key default gen_random_uuid(),name text,email text,phone text,subject text,message text,created_at timestamptz default now());
+alter table public.site_settings enable row level security;alter table public.pages enable row level security;alter table public.products enable row level security;alter table public.enquiries enable row level security;
+create or replace function public.is_admin() returns boolean language sql stable security definer set search_path=public as $$select exists(select 1 from public.admins where user_id=auth.uid())$$;
+create policy "public settings read" on public.site_settings for select using(true);create policy "admin settings write" on public.site_settings for all to authenticated using(public.is_admin()) with check(public.is_admin());
+create policy "public pages read" on public.pages for select using(true);create policy "admin pages write" on public.pages for all to authenticated using(public.is_admin()) with check(public.is_admin());
+create policy "published products read" on public.products for select using(published=true or public.is_admin());create policy "admin products write" on public.products for all to authenticated using(public.is_admin()) with check(public.is_admin());
+create policy "public enquiries insert" on public.enquiries for insert with check(true);create policy "admin enquiries read" on public.enquiries for select to authenticated using(public.is_admin());
+insert into storage.buckets(id,name,public) values('site-assets','site-assets',true) on conflict(id) do nothing;
+create policy "public media read" on storage.objects for select using(bucket_id='site-assets');create policy "admin media write" on storage.objects for all to authenticated using(bucket_id='site-assets' and public.is_admin()) with check(bucket_id='site-assets' and public.is_admin());
+-- After creating a Supabase Auth user, add it: insert into public.admins(user_id,email) values('YOUR-USER-UUID','khalajamani.ltd@hotmail.com');
